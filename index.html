@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DHL · SpaceX Control Tower</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --dhl-yellow: #FFCC00;
+    --dhl-red: #D40511;
+    --bg: #0A0A0A;
+    --bg2: #111111;
+    --bg3: #1A1A1A;
+    --border: rgba(255,255,255,0.07);
+    --text: #E8E8E8;
+    --text-muted: #666;
+    --text-dim: #444;
+    --success: #00C853;
+    --danger: #FF3D3D;
+    --warning: #FFCC00;
+    --info: #2979FF;
+    --sidebar-w: 220px;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; overflow: hidden; }
+
+  /* SIDEBAR */
+  aside {
+    position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh;
+    background: var(--bg2); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; z-index: 100;
+  }
+
+  .logo-area {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-dhl {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+  }
+
+  .logo-box {
+    background: var(--dhl-red); padding: 4px 8px;
+    font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px;
+    color: var(--dhl-yellow); line-height: 1;
+  }
+
+  .logo-client {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;
+  }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(0,200,83,0.08); border: 1px solid rgba(0,200,83,0.2);
+    border-radius: 20px; padding: 3px 10px; font-size: 11px;
+    color: var(--success); font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  nav { flex: 1; padding: 16px 0; overflow-y: auto; }
+
+  .nav-section {
+    padding: 0 12px; margin-bottom: 6px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    color: var(--text-dim); letter-spacing: 0.15em; text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 16px; cursor: pointer; transition: all 0.15s;
+    border-left: 2px solid transparent; font-size: 13px; color: var(--text-muted);
+    user-select: none;
+  }
+
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+
+  .nav-item.active {
+    background: rgba(255,204,0,0.06); border-left-color: var(--dhl-yellow);
+    color: var(--dhl-yellow);
+  }
+
+  .nav-icon {
+    width: 16px; height: 16px; opacity: 0.6; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  .nav-badge {
+    margin-left: auto; font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; background: rgba(255,61,61,0.15);
+    color: var(--danger); padding: 1px 6px; border-radius: 4px;
+  }
+
+  .sidebar-footer {
+    padding: 16px; border-top: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-dim);
+  }
+
+  .update-time { color: var(--success); }
+
+  /* MAIN */
+  main {
+    margin-left: var(--sidebar-w); height: 100vh;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    height: 52px; background: var(--bg2); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 24px; gap: 16px; flex-shrink: 0;
+  }
+
+  .topbar-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 18px;
+    letter-spacing: 2px; color: var(--text); flex: 1;
+  }
+
+  .topbar-meta {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 16px;
+  }
+
+  .kpi-bar {
+    display: flex; gap: 1px; padding: 0 24px; background: var(--bg3);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+
+  .kpi-item {
+    flex: 1; padding: 12px 16px; border-right: 1px solid var(--border);
+    position: relative;
+  }
+
+  .kpi-item:last-child { border-right: none; }
+
+  .kpi-item::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+
+  .kpi-item.info::before { background: var(--info); }
+  .kpi-item.danger::before { background: var(--danger); }
+  .kpi-item.success::before { background: var(--success); }
+  .kpi-item.warning::before { background: var(--warning); }
+
+  .kpi-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px;
+  }
+
+  .kpi-value {
+    font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 1px; line-height: 1;
+  }
+
+  .kpi-item.info .kpi-value { color: #5B9CF6; }
+  .kpi-item.danger .kpi-value { color: var(--danger); }
+  .kpi-item.success .kpi-value { color: var(--success); }
+  .kpi-item.warning .kpi-value { color: var(--warning); }
+
+  .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* CONTENT */
+  .content { flex: 1; overflow: hidden; position: relative; }
+
+  .report-panel {
+    display: none; width: 100%; height: 100%; flex-direction: column;
+  }
+
+  .report-panel.active { display: flex; }
+
+  .report-header {
+    padding: 12px 24px; background: var(--bg2); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  }
+
+  .report-tag {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    background: rgba(255,204,0,0.1); color: var(--dhl-yellow);
+    border: 1px solid rgba(255,204,0,0.2); padding: 2px 8px; border-radius: 3px;
+    letter-spacing: 0.05em;
+  }
+
+  .report-name { font-size: 13px; color: var(--text); font-weight: 500; }
+
+  .report-actions { margin-left: auto; display: flex; gap: 8px; }
+
+  .btn-action {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text-muted); padding: 4px 10px; border-radius: 3px;
+    cursor: pointer; transition: all 0.15s; letter-spacing: 0.05em;
+  }
+
+  .btn-action:hover { border-color: var(--dhl-yellow); color: var(--dhl-yellow); }
+
+  iframe {
+    flex: 1; border: none; width: 100%; background: var(--bg);
+  }
+
+  /* PLACEHOLDER */
+  .placeholder {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+  }
+
+  .placeholder-icon {
+    font-family: 'Bebas Neue', sans-serif; font-size: 64px;
+    color: var(--border); letter-spacing: 4px;
+  }
+
+  .placeholder-text {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    color: var(--text-dim); text-align: center; line-height: 1.8;
+  }
+
+  .placeholder-btn {
+    margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    background: transparent; border: 1px solid rgba(255,204,0,0.3);
+    color: var(--dhl-yellow); padding: 8px 20px; border-radius: 3px;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.08em;
+  }
+
+  .placeholder-btn:hover { background: rgba(255,204,0,0.06); }
+
+  /* SCANLINE efeito sutil */
+  main::after {
+    content: ''; position: fixed; top: 0; left: var(--sidebar-w); right: 0; bottom: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none; z-index: 999;
+  }
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="logo-area">
+    <div class="logo-dhl">
+      <div class="logo-box">DHL</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--text)">SpaceX</div>
+    </div>
+    <div class="logo-client" style="margin-bottom:10px">Control Tower · Jandira</div>
+    <div class="status-pill"><div class="status-dot"></div>Sistema online</div>
+  </div>
+
+  <nav>
+    <div class="nav-section" style="margin-top:12px;margin-bottom:8px">Relatórios</div>
+
+    <div class="nav-item active" onclick="showPanel('starlink')">
+      <div class="nav-icon">◈</div>
+      Starlink Overview
+      <span class="nav-badge">37</span>
+    </div>
+
+    <div class="nav-item" onclick="showPanel('css')">
+      <div class="nav-icon">◉</div>
+      CSS / Entregas
+    </div>
+
+    <div class="nav-item" onclick="showPanel('comite')">
+      <div class="nav-icon">◎</div>
+      Comitê Semanal
+    </div>
+
+    <div class="nav-section" style="margin-top:20px;margin-bottom:8px">Operação</div>
+
+    <div class="nav-item" onclick="showPanel('atrasos')">
+      <div class="nav-icon">⚠</div>
+      Atrasos do Dia
+      <span class="nav-badge">37</span>
+    </div>
+
+    <div class="nav-item" onclick="showPanel('otd')">
+      <div class="nav-icon">◐</div>
+      On Time Delivery
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div>Última atualização</div>
+    <div class="update-time" id="update-time">--:--</div>
+    <div style="margin-top:8px;color:var(--text-dim)">v1.0 · Power BI Pro</div>
+  </div>
+</aside>
+
+<main>
+  <div class="topbar">
+    <div class="topbar-title">CONTROL TOWER</div>
+    <div class="topbar-meta">
+      <span id="current-date">--/--/----</span>
+      <span style="color:var(--border)">|</span>
+      <span id="current-time" style="color:var(--dhl-yellow)">--:--:--</span>
+    </div>
+  </div>
+
+  <div class="kpi-bar">
+    <div class="kpi-item info">
+      <div class="kpi-label">Para entregar hoje</div>
+      <div class="kpi-value">142</div>
+      <div class="kpi-sub">notas fiscais</div>
+    </div>
+    <div class="kpi-item danger">
+      <div class="kpi-label">Atrasadas</div>
+      <div class="kpi-value">37</div>
+      <div class="kpi-sub">requerem atenção</div>
+    </div>
+    <div class="kpi-item success">
+      <div class="kpi-label">Entregues hoje</div>
+      <div class="kpi-value">98</div>
+      <div class="kpi-sub">concluídas</div>
+    </div>
+    <div class="kpi-item warning">
+      <div class="kpi-label">On Time Delivery</div>
+      <div class="kpi-value">94,5%</div>
+      <div class="kpi-sub">meta: 95,0%</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- PAINEL: STARLINK -->
+    <div class="report-panel active" id="panel-starlink">
+      <div class="report-header">
+        <span class="report-tag">RELATÓRIO 01</span>
+        <span class="report-name">Starlink Overview — Pendências e Entregas</span>
+        <div class="report-actions">
+          <button class="btn-action" onclick="openPBI('starlink')">Abrir no Power BI ↗</button>
+        </div>
+      </div>
+      <div class="placeholder">
+        <div class="placeholder-icon">PBI</div>
+        <div class="placeholder-text">
+          Cole o link de incorporação do relatório<br>
+          Starlink no arquivo HTML para exibir aqui
+        </div>
+        <button class="placeholder-btn" onclick="openPBI('starlink')">Como obter o link de incorporação ↗</button>
+      </div>
+      <!-- Quando tiver o link, substitua o placeholder acima por:
+      <iframe src="SEU_LINK_DE_INCORPORAÇÃO_AQUI" allowfullscreen></iframe>
+      -->
+    </div>
+
+    <!-- PAINEL: CSS -->
+    <div class="report-panel" id="panel-css">
+      <div class="report-header">
+        <span class="report-tag">RELATÓRIO 02</span>
+        <span class="report-name">CSS — Controle de Entregas</span>
+        <div class="report-actions">
+          <button class="btn-action" onclick="openPBI('css')">Abrir no Power BI ↗</button>
+        </div>
+      </div>
+      <div class="placeholder">
+        <div class="placeholder-icon">PBI</div>
+        <div class="placeholder-text">
+          Cole o link de incorporação do relatório<br>
+          CSS no arquivo HTML para exibir aqui
+        </div>
+        <button class="placeholder-btn" onclick="openPBI('css')">Como obter o link de incorporação ↗</button>
+      </div>
+    </div>
+
+    <!-- PAINEL: COMITÊ -->
+    <div class="report-panel" id="panel-comite">
+      <div class="report-header">
+        <span class="report-tag">RELATÓRIO 03</span>
+        <span class="report-name">Comitê Semanal — Visão Gerencial</span>
+        <div class="report-actions">
+          <button class="btn-action" onclick="openPBI('comite')">Abrir no Power BI ↗</button>
+        </div>
+      </div>
+      <div class="placeholder">
+        <div class="placeholder-icon">PBI</div>
+        <div class="placeholder-text">
+          Cole o link de incorporação do relatório<br>
+          Comitê no arquivo HTML para exibir aqui
+        </div>
+        <button class="placeholder-btn" onclick="openPBI('comite')">Como obter o link de incorporação ↗</button>
+      </div>
+    </div>
+
+    <!-- PAINEL: ATRASOS -->
+    <div class="report-panel" id="panel-atrasos">
+      <div class="report-header">
+        <span class="report-tag">OPERAÇÃO</span>
+        <span class="report-name">Atrasos do Dia — Análise Detalhada</span>
+        <div class="report-actions">
+          <button class="btn-action" onclick="openPBI('atrasos')">Abrir no Power BI ↗</button>
+        </div>
+      </div>
+      <div class="placeholder">
+        <div class="placeholder-icon">PBI</div>
+        <div class="placeholder-text">
+          Cole o link de incorporação do relatório<br>
+          de atrasos no arquivo HTML para exibir aqui
+        </div>
+        <button class="placeholder-btn" onclick="openPBI('atrasos')">Como obter o link de incorporação ↗</button>
+      </div>
+    </div>
+
+    <!-- PAINEL: OTD -->
+    <div class="report-panel" id="panel-otd">
+      <div class="report-header">
+        <span class="report-tag">OPERAÇÃO</span>
+        <span class="report-name">On Time Delivery — Performance</span>
+        <div class="report-actions">
+          <button class="btn-action" onclick="openPBI('otd')">Abrir no Power BI ↗</button>
+        </div>
+      </div>
+      <div class="placeholder">
+        <div class="placeholder-icon">PBI</div>
+        <div class="placeholder-text">
+          Cole o link de incorporação do relatório<br>
+          OTD no arquivo HTML para exibir aqui
+        </div>
+        <button class="placeholder-btn" onclick="openPBI('otd')">Como obter o link de incorporação ↗</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const links = {
+    starlink: 'https://app.powerbi.com/SEU_LINK_STARLINK',
+    css:      'https://app.powerbi.com/SEU_LINK_CSS',
+    comite:   'https://app.powerbi.com/SEU_LINK_COMITE',
+    atrasos:  'https://app.powerbi.com/SEU_LINK_ATRASOS',
+    otd:      'https://app.powerbi.com/SEU_LINK_OTD',
+  };
+
+  function showPanel(id) {
+    document.querySelectorAll('.report-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  function openPBI(id) {
+    window.open(links[id], '_blank');
+  }
+
+  function updateClock() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('current-time').textContent =
+      pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+    document.getElementById('current-date').textContent =
+      pad(now.getDate()) + '/' + pad(now.getMonth()+1) + '/' + now.getFullYear();
+    document.getElementById('update-time').textContent =
+      pad(now.getHours()) + ':' + pad(now.getMinutes());
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+</script>
+</body>
+</html>
